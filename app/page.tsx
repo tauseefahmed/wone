@@ -1,103 +1,296 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { formatDate, truncateText } from '@/lib/utils'
+import { prisma } from '@/lib/prisma'
+import { Suspense } from 'react'
+import FrontShell from '@/components/FrontShell'
 
-export default function Home() {
+interface Post {
+  id: string
+  title: string
+  slug: string
+  content: string
+  excerpt: string | null
+  featuredImage: string | null
+  published: boolean
+  featured?: boolean
+  createdAt: string | Date
+  author: {
+    name: string | null
+    email: string
+  }
+  categories: Array<{
+    category: {
+      id: string
+      name: string
+      slug: string
+    }
+  }>
+  tags: Array<{
+    tag: {
+      id: string
+      name: string
+      slug: string
+    }
+  }>
+}
+
+interface HomePageProps {
+  searchParams: { page?: string }
+}
+
+async function getPosts(page: number = 1, limit: number = 6, excludeId?: string) {
+  const skip = (page - 1) * limit
+  
+  const [posts, total] = await Promise.all([
+    prisma.post.findMany({
+      where: { published: true, ...(excludeId ? { id: { not: excludeId } } : {}) },
+      include: {
+        author: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        categories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
+        tags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip,
+      take: limit,
+    }),
+    prisma.post.count({
+      where: { published: true, ...(excludeId ? { id: { not: excludeId } } : {}) },
+    }),
+  ])
+
+  return {
+    posts,
+    total,
+    totalPages: Math.ceil(total / limit),
+    currentPage: page,
+  }
+}
+
+async function getFeaturedPost(): Promise<Post | null> {
+  const post = await prisma.post.findFirst({
+    where: { published: true, featured: true },
+    include: {
+      author: { select: { name: true, email: true } },
+      categories: { include: { category: { select: { id: true, name: true, slug: true } } } },
+      tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+  return post as any
+}
+
+function PostCard({ post }: { post: Post }) {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <article className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+      <div className="p-6">
+        <div className="flex items-center text-sm text-gray-500 mb-2">
+          <time dateTime={new Date(post.createdAt as any).toISOString()}>
+            {formatDate(post.createdAt as any)}
+          </time>
+          <span className="mx-2">•</span>
+          <span>{post.author.name || post.author.email}</span>
         </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-3">
+          <Link 
+            href={`/${post.slug}`}
+            className="hover:text-green-600 transition-colors duration-200"
+          >
+            {post.title}
+          </Link>
+        </h2>
+        <p className="text-gray-600 mb-4 leading-relaxed">
+          {post.excerpt || truncateText(post.content.replace(/<[^>]*>/g, ''), 150)}
+        </p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {post.categories.map(({ category }) => (
+            <span
+              key={category.id}
+              className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+            >
+              {category.name}
+            </span>
+          ))}
+          {post.tags.map(({ tag }) => (
+            <span
+              key={tag.id}
+              className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
+            >
+              #{tag.name}
+            </span>
+          ))}
+        </div>
+        <Link
+          href={`/${post.slug}`}
+          className="inline-flex items-center text-green-600 hover:text-green-800 font-medium transition-colors duration-200"
+        >
+          Read more
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      </div>
+    </article>
+  )
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const _currentPage = Number(searchParams.page) || 1 // unused now on home
+  const featuredPost = await getFeaturedPost()
+  const { posts, total } = await getPosts(1, 6, featuredPost?.id)
+
+  return (
+    <FrontShell>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Hero Featured Post */}
+        {featuredPost && (
+          <section className="relative overflow-hidden rounded-2xl mb-10 bg-gray-900 text-white">
+            <div className="absolute inset-0">
+              {featuredPost.featuredImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={featuredPost.featuredImage} alt={featuredPost.title} className="w-full h-full object-cover opacity-60" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-indigo-600 to-blue-500 opacity-80" />)
+              }
+            </div>
+            <div className="relative z-10 p-8 sm:p-12 lg:p-16">
+              <div className="text-sm text-gray-200 mb-3 flex items-center">
+                <time dateTime={new Date(featuredPost.createdAt as any).toISOString()} className="opacity-90">{formatDate(featuredPost.createdAt as any)}</time>
+                <span className="mx-2 opacity-80">•</span>
+                <span className="opacity-90">{featuredPost.author.name || featuredPost.author.email}</span>
+              </div>
+              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-4">{featuredPost.title}</h1>
+              <p className="max-w-3xl text-gray-200 mb-6">
+                {featuredPost.excerpt || truncateText(featuredPost.content.replace(/<[^>]*>/g, ''), 220)}
+              </p>
+              <Link href={`/${featuredPost.slug}`} className="inline-flex items-center bg-white text-gray-900 px-5 py-2.5 rounded-md font-semibold hover:bg-gray-100 transition">
+                Read now
+                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {posts.length === 0 ? (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">No posts found</h2>
+            <p className="text-gray-600">There are no published posts yet. Check back later!</p>
+          </div>
+        ) : (
+          <>
+            {/* Posts Grid */}
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-12">
+              {posts.map((post) => (
+                <article key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                  {/* Featured image or placeholder */}
+                  {post.featuredImage ? (
+                    <img
+                      src={post.featuredImage}
+                      alt={post.title}
+                      className="w-full h-48 object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
+                      <span className="text-sm">No image</span>
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <div className="flex items-center text-sm text-gray-500 mb-2">
+                      <time dateTime={new Date(post.createdAt as any).toISOString()}>
+                        {formatDate(post.createdAt as any)}
+                      </time>
+                      <span className="mx-2">•</span>
+                      <span>{post.author.name || post.author.email}</span>
+                    </div>
+                    
+                    <h2 className="text-xl font-semibold text-gray-900 mb-3">
+                      <Link 
+                        href={`/${post.slug}`}
+                        className="hover:text-green-600 transition-colors duration-200"
+                      >
+                        {post.title}
+                      </Link>
+                    </h2>
+                    
+                    <p className="text-gray-600 mb-4 leading-relaxed">
+                      {post.excerpt || truncateText(post.content.replace(/<[^>]*>/g, ''), 150)}
+                    </p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {post.categories.map(({ category }) => (
+                        <span
+                          key={category.id}
+                          className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                        >
+                          {category.name}
+                        </span>
+                      ))}
+                      {post.tags.map(({ tag }) => (
+                        <span
+                          key={tag.id}
+                          className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
+                        >
+                          #{tag.name}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    <Link
+                      href={`/${post.slug}`}
+                      className="inline-flex items-center text-green-600 hover:text-green-800 font-medium transition-colors duration-200"
+                    >
+                      Read more
+                      <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+            {/* View all posts link if there are more than shown */}
+            {total > posts.length && (
+              <div className="flex justify-end">
+                <Link href="/blog" className="text-green-600 hover:text-green-800 font-medium inline-flex items-center">
+                  View all posts
+                  <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            )}
+          </>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    </FrontShell>
+  )
 }

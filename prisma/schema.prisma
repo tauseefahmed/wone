@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  posts     Post[]
+  pages     Page[]
+  
+  @@map("users")
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String   @db.LongText
+  excerpt     String?  @db.Text
+  featuredImage String?
+  metaTitle   String?
+  metaDescription String? @db.Text
+  featured    Boolean  @default(false)
+  published   Boolean  @default(false)
+  showAuthor  Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  categories  PostCategory[]
+  tags        PostTag[]
+  
+  @@map("posts")
+}
+
+model Page {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String   @db.LongText
+  featuredImage String?
+  metaTitle   String?
+  metaDescription String? @db.Text
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  @@map("pages")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  posts       PostCategory[]
+  
+  @@map("categories")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  posts     PostTag[]
+  
+  @@map("tags")
+}
+
+model PostCategory {
+  postId     String
+  categoryId String
+  
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@id([postId, categoryId])
+  @@map("post_categories")
+}
+
+model PostTag {
+  postId String
+  tagId  String
+  
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
+
+/// Generic key-value settings store for dynamic CMS settings
+model Setting {
+  key        String   @id
+  value      String?  @db.LongText
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("settings")
+}
