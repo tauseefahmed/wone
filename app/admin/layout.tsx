@@ -3,6 +3,20 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { Inter } from 'next/font/google'
+import {
+  LayoutDashboard,
+  FileText,
+  Images,
+  Layers,
+  Settings,
+  Bell,
+  Menu,
+  LogOut,
+  Search as SearchIcon,
+} from 'lucide-react'
+
+const inter = Inter({ subsets: ['latin'], weight: ['300', '400', '600', '700'] })
 
 export default function AdminLayout({
   children,
@@ -14,6 +28,9 @@ export default function AdminLayout({
   const [siteName, setSiteName] = useState<string>('CMS Admin')
   const router = useRouter()
   const pathname = usePathname()
+  // Hooks must be declared before any conditional returns
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   // Don't check authentication for login page
   const isLoginPage = pathname === '/admin/login'
@@ -104,76 +121,98 @@ export default function AdminLayout({
     return <>{children}</>
   }
 
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  const NavItem = ({ href, label, icon }: { href: string; label: string; icon?: React.ReactNode }) => (
+    <Link href={href} className={`nav-item ${isActive(href) ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>
+      {icon}
+      <span>{label}</span>
+    </Link>
+  )
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex items-center">
-                <Link href="/admin" className="text-xl font-bold text-gray-900">
-                  {siteName || 'CMS Admin'}
-                </Link>
+    <div className={`${inter.className} admin-theme min-h-screen`}>
+      <div className="layout">
+        {/* Mobile overlay */}
+        {mobileOpen && (
+          <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setMobileOpen(false)} />
+        )}
+
+        {/* Sidebar */}
+        <aside className={`admin-sidebar p-4 ${collapsed ? 'collapsed' : ''} hidden md:block`}>
+          <div className="mb-6 flex items-center justify-between">
+            <Link href="/admin" className="text-xl font-bold brand" style={{ color: 'var(--admin-text)' }}>
+              {siteName || 'CMS Admin'}
+            </Link>
+            <button className="btn btn-ghost collapse-toggle" onClick={() => setCollapsed((v) => !v)} aria-label="Toggle sidebar">
+              <Menu size={18} />
+            </button>
+          </div>
+          <div className="space-y-1">
+            <NavItem href="/admin" label="Dashboard" icon={<LayoutDashboard size={18} />} />
+            <NavItem href="/admin/posts" label="Posts" icon={<FileText size={18} />} />
+            <NavItem href="/admin/pages" label="Pages" icon={<Layers size={18} />} />
+            <NavItem href="/admin/media" label="Media" icon={<Images size={18} />} />
+            <NavItem href="/admin/categories" label="Categories" icon={<Layers size={18} />} />
+            <div className="mt-4 pt-4" style={{ borderTop: '1px solid #E5E7EB' }} />
+            <NavItem href="/admin/settings" label="Settings" icon={<Settings size={18} />} />
+          </div>
+        </aside>
+
+        {/* Mobile Sidebar Drawer */}
+        <aside className={`admin-sidebar p-4 fixed z-50 top-0 left-0 h-full md:hidden ${mobileOpen ? '' : 'hidden'}`}>
+          <div className="mb-6 flex items-center justify-between">
+            <Link href="/admin" className="text-xl font-bold brand" style={{ color: 'var(--admin-text)' }}>
+              {siteName || 'CMS Admin'}
+            </Link>
+            <button className="btn btn-ghost" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+              <Menu size={18} />
+            </button>
+          </div>
+          <div className="space-y-1">
+            <NavItem href="/admin" label="Dashboard" icon={<LayoutDashboard size={18} />} />
+            <NavItem href="/admin/posts" label="Posts" icon={<FileText size={18} />} />
+            <NavItem href="/admin/pages" label="Pages" icon={<Layers size={18} />} />
+            <NavItem href="/admin/media" label="Media" icon={<Images size={18} />} />
+            <NavItem href="/admin/categories" label="Categories" icon={<Layers size={18} />} />
+            <div className="mt-4 pt-4" style={{ borderTop: '1px solid #E5E7EB' }} />
+            <NavItem href="/admin/settings" label="Settings" icon={<Settings size={18} />} />
+          </div>
+        </aside>
+
+        {/* Content */}
+        <div className="admin-content">
+          <header className="admin-topbar">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4">
+              <button className="btn btn-ghost md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+                <Menu size={18} />
+              </button>
+              <div className="hidden md:flex items-center gap-2 flex-1">
+                <SearchIcon size={18} color="#9CA3AF" />
+                <input className="input" placeholder="Search..." />
               </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8 flex items-center">
-                <Link
-                  href="/admin"
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin/posts"
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Posts
-                </Link>
-                <Link
-                  href="/admin/pages"
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Pages
-                </Link>
-                <Link
-                  href="/admin/media"
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Media
-                </Link>
-                <Link
-                  href="/admin/categories"
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Categories
-                </Link>
-                <Link
-                  href="/admin/settings"
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Settings
-                </Link>
+              <button className="btn btn-ghost" aria-label="Notifications"><Bell size={18} /></button>
+              <div className="avatar avatar-md">
+                <img src={`https://www.gravatar.com/avatar?d=identicon`} alt="profile" />
               </div>
-            </div>
-            <div className="flex items-center">
-              <span className="text-gray-700 mr-4">Welcome, {user?.email}</span>
               <button
                 onClick={async () => {
                   await fetch('/api/auth/signout', { method: 'POST' })
                   window.location.href = '/admin/login'
                 }}
-                className="bg-gray-800 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                className="btn btn-primary"
               >
+                <LogOut size={16} />
                 Sign out
               </button>
             </div>
-          </div>
+          </header>
+          <main className="p-6">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </main>
         </div>
-      </nav>
-      <main className="py-10">
-        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-          {children}
-        </div>
-      </main>
+      </div>
     </div>
   )
 }

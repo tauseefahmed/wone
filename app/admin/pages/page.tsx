@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { Edit as EditIcon, Eye, Trash2, RotateCcw, XCircle, Plus } from 'lucide-react'
@@ -21,6 +21,7 @@ export default function PagesPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showTrash, setShowTrash] = useState(false)
+  const [search, setSearch] = useState('')
 
   const fetchPages = async (page: number = 1, trash: boolean = showTrash) => {
     try {
@@ -139,44 +140,56 @@ export default function PagesPage() {
     }
   }
 
+  const filteredPages = useMemo(() => {
+    if (!search.trim()) return pages
+    const q = search.toLowerCase()
+    return pages.filter(p => p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q))
+  }, [pages, search])
+
   if (loading) return <div className="text-center">Loading pages...</div>
 
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Pages</h1>
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--admin-text)' }}>Pages</h1>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mr-4 w-full sm:w-auto">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search pages..."
+              className="input w-full sm:w-64"
+            />
+          </div>
           <div className="flex items-center gap-2 mr-4">
             <button
               onClick={() => { setShowTrash(false); setSelectedIds([]); setLoading(true); fetchPages(1, false) }}
-              className={`px-3 py-1 rounded ${!showTrash ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`btn ${!showTrash ? 'btn-secondary' : 'btn-ghost'}`}
             >
               All
             </button>
             <button
               onClick={() => { setShowTrash(true); setSelectedIds([]); setLoading(true); fetchPages(1, true) }}
-              className={`px-3 py-1 rounded ${showTrash ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`btn ${showTrash ? 'btn-secondary' : 'btn-ghost'}`}
             >
               Trash
             </button>
           </div>
-          <div className="flex items-center gap-2 border rounded-md px-3 py-2">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-md" style={{ border: '1px solid var(--admin-border)', background: 'var(--admin-surface)' }}>
             <input
               id="select-all"
               type="checkbox"
               checked={isAllSelected}
               onChange={toggleSelectAll}
-              className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              className="h-4 w-4"
             />
-            <label htmlFor="select-all" className="text-sm text-gray-700">Select all</label>
+            <label htmlFor="select-all" className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>Select all</label>
           </div>
           {!showTrash ? (
             <button
               onClick={bulkTrash}
               disabled={selectedIds.length === 0}
-              className={`px-4 py-2 rounded-md text-white transition duration-200 ${
-                selectedIds.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
+              className={`btn ${selectedIds.length === 0 ? 'btn-ghost cursor-not-allowed opacity-60' : 'btn-warning'}`}
             >
               Move to Trash
             </button>
@@ -185,18 +198,14 @@ export default function PagesPage() {
               <button
                 onClick={bulkRestore}
                 disabled={selectedIds.length === 0}
-                className={`px-4 py-2 rounded-md text-white transition duration-200 ${
-                  selectedIds.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-                }`}
+                className={`btn ${selectedIds.length === 0 ? 'btn-ghost cursor-not-allowed opacity-60' : 'btn-success'}`}
               >
                 Restore
               </button>
               <button
                 onClick={bulkForceDelete}
                 disabled={selectedIds.length === 0}
-                className={`px-4 py-2 rounded-md text-white transition duration-200 ${
-                  selectedIds.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-                }`}
+                className={`btn ${selectedIds.length === 0 ? 'btn-ghost cursor-not-allowed opacity-60' : 'btn-danger'}`}
               >
                 Delete Permanently
               </button>
@@ -204,7 +213,7 @@ export default function PagesPage() {
           )}
           <Link
             href="/admin/pages/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200 inline-flex items-center gap-2"
+            className="btn btn-secondary inline-flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add New Page
@@ -213,11 +222,11 @@ export default function PagesPage() {
       </div>
 
       {pages.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No pages found</p>
+        <div className="card text-center py-12">
+          <p className="text-lg" style={{ color: 'var(--admin-text-muted)' }}>No pages found</p>
           <Link
             href="/admin/pages/new"
-            className="mt-4 inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200"
+            className="mt-4 inline-flex items-center gap-2 btn btn-secondary"
           >
             <Plus className="w-4 h-4" />
             Create your first page
@@ -225,9 +234,9 @@ export default function PagesPage() {
         </div>
       ) : (
         <>
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
-              {pages.map((page) => (
+          <div className="card p-0 overflow-hidden">
+            <ul className="divide-y" style={{ borderColor: 'var(--admin-border)' }}>
+              {filteredPages.map((page) => (
                 <li key={page.id}>
                   <div className="px-4 py-4 sm:px-6">
                     <div className="flex items-start sm:items-center justify-between gap-3">
@@ -236,29 +245,27 @@ export default function PagesPage() {
                           type="checkbox"
                           checked={selectedIds.includes(page.id)}
                           onChange={() => toggleSelect(page.id)}
-                          className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                          className="mt-1 h-4 w-4"
                         />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="text-lg font-medium text-blue-600 truncate">
+                            <p className="text-lg font-medium truncate" style={{ color: 'var(--admin-secondary)' }}>
                               <Link href={`/admin/pages/${page.id}`}>{page.title}</Link>
                             </p>
                             <div className="ml-2 flex-shrink-0 flex">
                               {page.published && (
-                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                  Published
-                                </span>
+                                <span className="badge badge-success">Published</span>
                               )}
                             </div>
                           </div>
                           <div className="mt-2 sm:flex sm:justify-between">
                             <div className="sm:flex">
-                              <p className="flex items-center text-sm text-gray-500">/{page.slug}</p>
-                              <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
+                              <p className="flex items-center text-sm" style={{ color: 'var(--admin-text-muted)' }}>/{page.slug}</p>
+                              <p className="mt-2 flex items-center text-sm sm:mt-0 sm:ml-6" style={{ color: 'var(--admin-text-muted)' }}>
                                 By {page.author?.name || page.author?.email}
                               </p>
                             </div>
-                            <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                            <div className="mt-2 flex items-center text-sm sm:mt-0" style={{ color: 'var(--admin-text-muted)' }}>
                               <p>Created {formatDate(page.createdAt)}</p>
                             </div>
                           </div>
@@ -267,26 +274,26 @@ export default function PagesPage() {
                       <div className="ml-4 flex-shrink-0 flex space-x-2">
                         {!showTrash ? (
                           <>
-                            <Link href={`/admin/pages/${page.id}`} className="text-blue-600 hover:text-blue-900 text-sm font-medium inline-flex items-center gap-1">
+                            <Link href={`/admin/pages/${page.id}`} className="text-sm font-medium inline-flex items-center gap-1" style={{ color: 'var(--admin-secondary)' }}>
                               <EditIcon className="w-4 h-4" />
                               Edit
                             </Link>
-                            <Link href={`/pages/${page.slug}`} target="_blank" className="text-green-600 hover:text-green-900 text-sm font-medium inline-flex items-center gap-1">
+                            <Link href={`/pages/${page.slug}`} target="_blank" className="text-sm font-medium inline-flex items-center gap-1" style={{ color: 'var(--admin-success)' }}>
                               <Eye className="w-4 h-4" />
                               View
                             </Link>
-                            <button onClick={() => handleTrash(page.id)} className="text-yellow-700 hover:text-yellow-900 text-sm font-medium inline-flex items-center gap-1">
+                            <button onClick={() => handleTrash(page.id)} className="text-sm font-medium inline-flex items-center gap-1" style={{ color: 'var(--admin-warning)' }}>
                               <Trash2 className="w-4 h-4" />
                               Trash
                             </button>
                           </>
                         ) : (
                           <>
-                            <button onClick={() => handleRestore(page.id)} className="text-green-700 hover:text-green-900 text-sm font-medium inline-flex items-center gap-1">
+                            <button onClick={() => handleRestore(page.id)} className="text-sm font-medium inline-flex items-center gap-1" style={{ color: 'var(--admin-success)' }}>
                               <RotateCcw className="w-4 h-4" />
                               Restore
                             </button>
-                            <button onClick={() => handleForceDelete(page.id)} className="text-red-600 hover:text-red-900 text-sm font-medium inline-flex items-center gap-1">
+                            <button onClick={() => handleForceDelete(page.id)} className="text-sm font-medium inline-flex items-center gap-1" style={{ color: 'var(--admin-danger)' }}>
                               <XCircle className="w-4 h-4" />
                               Delete Permanently
                             </button>
@@ -307,11 +314,7 @@ export default function PagesPage() {
                   <button
                     key={p}
                     onClick={() => fetchPages(p)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      currentPage === p
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                    }`}
+                    className={`btn ${currentPage === p ? 'btn-secondary' : 'btn-ghost'}`}
                   >
                     {p}
                   </button>

@@ -116,11 +116,11 @@ export default function MediaLibraryPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">{isPicker ? 'Select Media' : 'Media Library'}</h1>
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--admin-text)' }}>{isPicker ? 'Select Media' : 'Media Library'}</h1>
         {!isPicker && (
           <label className="inline-flex items-center gap-3 cursor-pointer">
             <input multiple type="file" accept="image/*,audio/*,video/*,application/pdf" onChange={onUpload} disabled={uploading} className="hidden" />
-            <span className={`px-4 py-2 rounded-md text-white inline-flex items-center gap-2 ${uploading ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+            <span className={`btn btn-secondary inline-flex items-center gap-2 ${uploading ? 'opacity-60 cursor-not-allowed' : ''}`}>
               <UploadIcon className="w-4 h-4" />
               {uploading ? 'Uploading...' : 'Upload'}
             </span>
@@ -129,57 +129,57 @@ export default function MediaLibraryPage() {
       </div>
 
       <div className="flex items-center gap-3 mb-4">
-        <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filter by name..." className="border rounded px-3 py-2 w-full max-w-sm" />
-        <button onClick={load} className="px-3 py-2 border rounded inline-flex items-center gap-2"><ImagePlus className="w-4 h-4" />Refresh</button>
+        <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filter by name..." className="input w-full max-w-sm" />
+        <button onClick={load} className="btn btn-ghost inline-flex items-center gap-2"><ImagePlus className="w-4 h-4" />Refresh</button>
       </div>
 
-      {loading && <div>Loading...</div>}
-      {error && <div className="text-red-600">{error}</div>}
+      {loading && <div className="card">Loading...</div>}
+      {error && <div className="card" style={{ color: 'var(--admin-danger)' }}>{error}</div>}
 
       <div
-        className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 border-2 ${dragOver ? 'border-indigo-500 bg-indigo-50' : 'border-transparent'} p-2 rounded`}
+        className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-2 rounded`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onDrop={async (e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer?.files?.length) await uploadFiles(e.dataTransfer.files) }}
       >
         {filtered.map(item => (
-          <div key={item.name} className="border rounded bg-white overflow-hidden">
+          <div key={item.name} className="card p-0 overflow-hidden">
             {isPicker && multi && (
-              <label className="absolute m-2 p-1 bg-white/80 rounded shadow text-xs inline-flex items-center gap-1">
+              <label className="absolute m-2 p-1 rounded shadow text-xs inline-flex items-center gap-1" style={{ background: 'color-mix(in srgb, var(--admin-surface), #fff 20%)' }}>
                 <input type="checkbox" checked={!!selected[item.name]} onChange={(e) => setSelected(s => ({ ...s, [item.name]: e.target.checked }))} />
                 Select
               </label>
             )}
-            <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+            <div className="aspect-square flex items-center justify-center overflow-hidden" style={{ background: 'var(--admin-surface)' }}>
               {item.url.match(/\.(png|jpe?g|gif|webp|svg|ico)$/i) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={item.url} alt={item.name} className="object-contain w-full h-full" />
               ) : (
-                <div className="text-xs text-gray-600 p-2 break-all">{item.name}</div>
+                <div className="text-xs p-2 break-all" style={{ color: 'var(--admin-text-muted)' }}>{item.name}</div>
               )}
             </div>
             <div className="p-2 flex items-center justify-between gap-2 text-sm">
-              <div className="truncate" title={item.name}>{item.name}</div>
+              <div className="truncate" title={item.name} style={{ color: 'var(--admin-text)' }}>{item.name}</div>
             </div>
-            <div className="p-2 flex items-center gap-2 text-sm border-t">
-              <button onClick={() => onCopy(item.url)} className="px-2 py-1 border rounded hover:bg-gray-50 inline-flex items-center gap-1">
+            <div className="p-2 flex items-center gap-2 text-sm" style={{ borderTop: '1px solid var(--admin-border)' }}>
+              <button onClick={() => onCopy(item.url)} className="btn btn-ghost inline-flex items-center gap-1">
                 <CopyIcon className="w-4 h-4" />
                 Copy URL
               </button>
               {isPicker ? (
                 multi ? (
-                  <button onClick={() => setSelected(s => ({ ...s, [item.name]: !s[item.name] }))} className={`px-2 py-1 border rounded inline-flex items-center gap-1 ${selected[item.name] ? 'bg-indigo-600 text-white' : ''}`}>
+                  <button onClick={() => setSelected(s => ({ ...s, [item.name]: !s[item.name] }))} className={`btn inline-flex items-center gap-1 ${selected[item.name] ? 'btn-secondary' : 'btn-ghost'}`}>
                     {selected[item.name] ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                     {selected[item.name] ? 'Selected' : 'Select'}
                   </button>
                 ) : (
-                  <button onClick={() => onInsert(item.url)} className="px-2 py-1 border rounded bg-indigo-600 text-white hover:bg-indigo-700 inline-flex items-center gap-1">
+                  <button onClick={() => onInsert(item.url)} className="btn btn-secondary inline-flex items-center gap-1">
                     <Plus className="w-4 h-4" />
                     Insert
                   </button>
                 )
               ) : (
-                <button onClick={() => onDelete(item.name)} className="px-2 py-1 border rounded text-red-600 hover:bg-red-50 inline-flex items-center gap-1">
+                <button onClick={() => onDelete(item.name)} className="btn btn-danger inline-flex items-center gap-1">
                   <Trash2 className="w-4 h-4" />
                   Delete
                 </button>
@@ -190,13 +190,13 @@ export default function MediaLibraryPage() {
       </div>
 
       {!loading && filtered.length === 0 && (
-        <div className="text-gray-500">No media found.</div>
+        <div className="card" style={{ color: 'var(--admin-text-muted)' }}>No media found.</div>
       )}
 
       {isPicker && multi && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-white shadow-lg border rounded-full px-4 py-2 flex items-center gap-3">
-          <div className="text-sm text-gray-600">{Object.values(selected).filter(Boolean).length} selected</div>
-          <button onClick={onInsertSelected} className="px-3 py-1 rounded-full text-white bg-indigo-600 hover:bg-indigo-700 inline-flex items-center gap-2">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 shadow-lg rounded-full px-4 py-2 flex items-center gap-3" style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
+          <div className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>{Object.values(selected).filter(Boolean).length} selected</div>
+          <button onClick={onInsertSelected} className="btn btn-secondary rounded-full inline-flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Insert Selected
           </button>

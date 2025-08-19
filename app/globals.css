@@ -25,6 +25,219 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Admin Design System (scoped) */
+.admin-theme {
+  /* Colors */
+  --admin-primary: #FF6B35;
+  --admin-secondary: #4A90E2;
+  --admin-bg: #F7F8FA;
+  --admin-surface: #FFFFFF;
+  --admin-text: #1C1C1C;
+  --admin-text-muted: #6E6E6E;
+  --admin-success: #4CAF50;
+  --admin-warning: #FFC107;
+  --admin-danger: #F44336;
+
+  /* Typography */
+  --admin-font: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --admin-h1: 24px;
+  --admin-h2: 20px;
+  --admin-h3: 18px;
+  --admin-body: 14px;
+  --admin-caption: 12px;
+  --admin-heading-weight: 600;
+  --admin-body-weight: 400;
+  --admin-caption-weight: 300;
+
+  /* Spacing */
+  --admin-space-base: 8px;
+  --admin-space-sm: 4px;
+  --admin-space-md: 16px;
+  --admin-space-lg: 24px;
+  --admin-space-xl: 32px;
+
+  /* Radius */
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 12px;
+  --admin-radius-lg: 20px;
+
+  /* Shadows */
+  --admin-shadow-card: 0 2px 8px rgba(0,0,0,0.05);
+  --admin-shadow-dropdown: 0 4px 12px rgba(0,0,0,0.1);
+
+  /* Layout */
+  --admin-nav-width: 240px;
+  --admin-header-height: 64px;
+
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  font-family: var(--admin-font);
+}
+
+/* Header */
+.admin-theme .admin-header {
+  background: var(--admin-surface);
+  border-bottom: 1px solid #E5E7EB;
+  height: var(--admin-header-height);
+}
+
+/* Layout: sidebar + content */
+.admin-theme .layout { display: flex; }
+.admin-theme .admin-sidebar {
+  width: var(--admin-nav-width);
+  background: var(--admin-surface);
+  border-right: 1px solid #E5E7EB;
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+}
+.admin-theme .admin-sidebar.collapsed { width: 72px; }
+.admin-theme .admin-sidebar .brand { font-weight: 700; }
+.admin-theme .admin-sidebar.collapsed .brand { display: none; }
+.admin-theme .admin-sidebar .nav-item span { transition: opacity 0.2s ease; }
+.admin-theme .admin-sidebar.collapsed .nav-item span { display: none; }
+.admin-theme .admin-sidebar .collapse-toggle { position: absolute; bottom: 12px; left: 12px; }
+.admin-theme .admin-content { flex: 1; min-width: 0; }
+
+/* Topbar */
+.admin-theme .admin-topbar {
+  background: var(--admin-surface);
+  border-bottom: 1px solid #E5E7EB;
+  height: var(--admin-header-height);
+  display: flex;
+  align-items: center;
+}
+
+/* Inputs */
+.admin-theme .input {
+  width: 100%;
+  border: 1px solid #E5E7EB;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+.admin-theme .input:focus { outline: none; box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2); border-color: var(--admin-secondary); }
+
+/* Sidebar navigation */
+.admin-theme .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--admin-text);
+}
+.admin-theme .nav-item:hover { background: rgba(0,0,0,0.04); }
+.admin-theme .nav-item.active { background: rgba(255, 107, 53, 0.1); color: var(--admin-primary); }
+
+/* Cards */
+.admin-theme .card {
+  background: var(--admin-surface);
+  border-radius: var(--admin-radius-md);
+  box-shadow: var(--admin-shadow-card);
+  padding: var(--admin-space-md);
+}
+
+/* Buttons */
+.admin-theme .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.admin-theme .btn-primary {
+  background: var(--admin-primary);
+  color: #fff;
+}
+.admin-theme .btn-primary:hover {
+  filter: brightness(0.95);
+}
+.admin-theme .btn-secondary {
+  background: var(--admin-secondary);
+  color: #fff;
+}
+.admin-theme .btn-secondary:hover { filter: brightness(0.95); }
+.admin-theme .btn-ghost {
+  background: transparent;
+  color: var(--admin-text);
+}
+.admin-theme .btn-ghost:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+/* Tabs / Nav links */
+.admin-theme .admin-tab {
+  border-bottom-width: 2px;
+  border-color: transparent;
+  color: var(--admin-text-muted);
+  padding: 8px 4px;
+  font-weight: 500;
+  font-size: 14px;
+}
+.admin-theme .admin-tab:hover {
+  color: var(--admin-text);
+  border-color: #E5E7EB;
+}
+.admin-theme .admin-tab.active {
+  color: var(--admin-text);
+  border-color: var(--admin-primary);
+}
+
+/* Tables */
+.admin-theme table.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.admin-theme .table thead th {
+  background: #F9FAFB;
+  font-weight: 600;
+}
+.admin-theme .table th,
+.admin-theme .table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #F0F0F0;
+}
+.admin-theme .table tbody tr:nth-child(even) {
+  background: #FAFAFA;
+}
+.admin-theme .table tbody tr:hover {
+  background: #F5F5F5;
+}
+
+/* Badges */
+.admin-theme .badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.admin-theme .badge-success { background: rgba(76, 175, 80, 0.12); color: var(--admin-success); }
+.admin-theme .badge-warning { background: rgba(255, 193, 7, 0.14); color: var(--admin-warning); }
+.admin-theme .badge-danger { background: rgba(244, 67, 54, 0.12); color: var(--admin-danger); }
+.admin-theme .badge-neutral { background: #F3F4F6; color: #4B5563; }
+
+/* Avatars */
+.admin-theme .avatar { border-radius: 9999px; overflow: hidden; }
+.admin-theme .avatar-sm { width: 24px; height: 24px; }
+.admin-theme .avatar-md { width: 32px; height: 32px; }
+.admin-theme .avatar-lg { width: 40px; height: 40px; }
+
+/* Simple chart container styles (charts lib not included) */
+.admin-theme .chart-card { padding: var(--admin-space-md); background: var(--admin-surface); border-radius: var(--admin-radius-md); box-shadow: var(--admin-shadow-card); }
+
+/* Hover and animation helpers */
+.admin-theme .hover-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+.admin-theme .transition-base { transition: 0.2s ease; }
+
 /* Shared content formatting applied in both editor and frontend */
 .prose-content {
   line-height: 1.75;

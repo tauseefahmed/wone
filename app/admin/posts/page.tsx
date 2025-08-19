@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { Edit as EditIcon, Eye, Trash2, RotateCcw, XCircle, Plus } from 'lucide-react'
@@ -23,6 +23,11 @@ interface Post {
   }>
 }
 
+interface Category {
+  id: string
+  name: string
+}
+
 export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,6 +35,9 @@ export default function PostsPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showTrash, setShowTrash] = useState(false)
+  const [search, setSearch] = useState('')
+  const [categories, setCategories] = useState<Category[]>([])
+  const [categoryId, setCategoryId] = useState<string>('')
 
   const fetchPosts = async (page: number = 1, trash: boolean = showTrash) => {
     try {
@@ -49,6 +57,11 @@ export default function PostsPage() {
 
   useEffect(() => {
     fetchPosts()
+    // Load categories for filter
+    fetch('/api/admin/categories')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => setCategories(Array.isArray(data?.categories) ? data.categories : []))
+      .catch(() => {})
   }, [])
 
   const isAllSelected = posts.length > 0 && selectedIds.length === posts.length
@@ -170,6 +183,22 @@ export default function PostsPage() {
     }
   }
 
+  const filteredPosts = useMemo(() => {
+    let list = posts
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter((p) => p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q))
+    }
+    if (categoryId) {
+      const selected = categories.find((c) => c.id === categoryId)
+      const selectedName = selected?.name
+      if (selectedName) {
+        list = list.filter((p) => p.categories?.some((c) => c.category?.name === selectedName))
+      }
+    }
+    return list
+  }, [posts, search, categoryId, categories])
+
   if (loading) {
     return <div className="text-center">Loading posts...</div>
   }
@@ -177,39 +206,73 @@ export default function PostsPage() {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Posts</h1>
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--admin-text)' }}>Posts</h1>
         <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2 mr-4">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search posts..."
+              className="input w-56"
+            />
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className="input w-44"
+            >
+              <option value="">All categories</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
           <div className="flex items-center gap-2 mr-4">
             <button
               onClick={() => { setShowTrash(false); setSelectedIds([]); setLoading(true); fetchPosts(1, false) }}
-              className={`px-3 py-1 rounded ${!showTrash ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`btn ${!showTrash ? 'btn-secondary' : 'btn-ghost'}`}
             >
               All
             </button>
             <button
               onClick={() => { setShowTrash(true); setSelectedIds([]); setLoading(true); fetchPosts(1, true) }}
-              className={`px-3 py-1 rounded ${showTrash ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`btn ${showTrash ? 'btn-secondary' : 'btn-ghost'}`}
             >
               Trash
             </button>
           </div>
-          <div className="flex items-center gap-2 border rounded-md px-3 py-2">
+          <div className="sm:hidden flex items-center gap-2 mr-4 w-full">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search posts..."
+              className="input flex-1"
+            />
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className="input"
+            >
+              <option value="">All</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-md" style={{ border: '1px solid var(--admin-border)', background: 'var(--admin-surface)' }}>
             <input
               id="select-all"
               type="checkbox"
               checked={isAllSelected}
               onChange={toggleSelectAll}
-              className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              className="h-4 w-4"
             />
-            <label htmlFor="select-all" className="text-sm text-gray-700">Select all</label>
+            <label htmlFor="select-all" className="text-sm" style={{ color: 'var(--admin-text-muted)' }}>Select all</label>
           </div>
           {!showTrash ? (
             <button
               onClick={bulkTrash}
               disabled={selectedIds.length === 0}
-              className={`px-4 py-2 rounded-md text-white transition duration-200 ${
-                selectedIds.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
+              className={`btn ${selectedIds.length === 0 ? 'btn-ghost cursor-not-allowed opacity-60' : 'btn-warning'}`}
             >
               Move to Trash
             </button>
@@ -218,18 +281,14 @@ export default function PostsPage() {
               <button
                 onClick={bulkRestore}
                 disabled={selectedIds.length === 0}
-                className={`px-4 py-2 rounded-md text-white transition duration-200 ${
-                  selectedIds.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-                }`}
+                className={`btn ${selectedIds.length === 0 ? 'btn-ghost cursor-not-allowed opacity-60' : 'btn-success'}`}
               >
                 Restore
               </button>
               <button
                 onClick={bulkForceDelete}
                 disabled={selectedIds.length === 0}
-                className={`px-4 py-2 rounded-md text-white transition duration-200 ${
-                  selectedIds.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-                }`}
+                className={`btn ${selectedIds.length === 0 ? 'btn-ghost cursor-not-allowed opacity-60' : 'btn-danger'}`}
               >
                 Delete Permanently
               </button>
@@ -237,7 +296,7 @@ export default function PostsPage() {
           )}
           <Link
             href="/admin/posts/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200 inline-flex items-center gap-2"
+            className="btn btn-secondary inline-flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add New Post
@@ -246,11 +305,11 @@ export default function PostsPage() {
       </div>
 
       {posts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No posts found</p>
+        <div className="card text-center py-12">
+          <p className="text-lg" style={{ color: 'var(--admin-text-muted)' }}>No posts found</p>
           <Link
             href="/admin/posts/new"
-            className="mt-4 inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200"
+            className="mt-4 inline-flex items-center gap-2 btn btn-secondary"
           >
             <Plus className="w-4 h-4" />
             Create your first post
@@ -258,9 +317,9 @@ export default function PostsPage() {
         </div>
       ) : (
         <>
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
-              {posts.map((post) => (
+          <div className="card p-0 overflow-hidden">
+            <ul className="divide-y" style={{ borderColor: 'var(--admin-border)' }}>
+              {filteredPosts.map((post) => (
                 <li key={post.id}>
                   <div className="px-4 py-4 sm:px-6">
                     <div className="flex items-start sm:items-center justify-between gap-3">
@@ -269,43 +328,37 @@ export default function PostsPage() {
                           type="checkbox"
                           checked={selectedIds.includes(post.id)}
                           onChange={() => toggleSelect(post.id)}
-                          className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                          className="mt-1 h-4 w-4"
                         />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="text-lg font-medium text-blue-600 truncate">
+                            <p className="text-lg font-medium truncate" style={{ color: 'var(--admin-secondary)' }}>
                               <Link href={`/admin/posts/${post.id}`}>
                                 {post.title}
                               </Link>
                             </p>
                             <div className="ml-2 flex-shrink-0 flex">
                               {post.published && (
-                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                  Published
-                                </span>
+                                <span className="badge badge-success">Published</span>
                               )}
                               {post.featured && (
-                                <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                  Featured
-                                </span>
+                                <span className="ml-2 badge badge-warning">Featured</span>
                               )}
                             </div>
                           </div>
                           <div className="mt-2 sm:flex sm:justify-between">
                             <div className="sm:flex">
-                              <p className="flex items-center text-sm text-gray-500">
+                              <p className="flex items-center text-sm" style={{ color: 'var(--admin-text-muted)' }}>
                                 By {post.author.name || post.author.email}
                               </p>
                               {post.categories.length > 0 && (
-                                <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
+                                <p className="mt-2 flex items-center text-sm sm:mt-0 sm:ml-6" style={{ color: 'var(--admin-text-muted)' }}>
                                   Categories: {post.categories.map(c => c.category.name).join(', ')}
                                 </p>
                               )}
                             </div>
-                            <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                              <p>
-                                Created {formatDate(post.createdAt)}
-                              </p>
+                            <div className="mt-2 flex items-center text-sm sm:mt-0" style={{ color: 'var(--admin-text-muted)' }}>
+                              <p>Created {formatDate(post.createdAt)}</p>
                             </div>
                           </div>
                         </div>
@@ -315,7 +368,8 @@ export default function PostsPage() {
                           <>
                             <Link
                               href={`/admin/posts/${post.id}`}
-                              className="text-blue-600 hover:text-blue-900 text-sm font-medium inline-flex items-center gap-1"
+                              className="text-sm font-medium inline-flex items-center gap-1"
+                              style={{ color: 'var(--admin-secondary)' }}
                             >
                               <EditIcon className="w-4 h-4" />
                               Edit
@@ -323,14 +377,16 @@ export default function PostsPage() {
                             <Link
                               href={`/${post.slug}`}
                               target="_blank"
-                              className="text-green-600 hover:text-green-900 text-sm font-medium inline-flex items-center gap-1"
+                              className="text-sm font-medium inline-flex items-center gap-1"
+                              style={{ color: 'var(--admin-success)' }}
                             >
                               <Eye className="w-4 h-4" />
                               View
                             </Link>
                             <button
                               onClick={() => handleTrash(post.id)}
-                              className="text-yellow-700 hover:text-yellow-900 text-sm font-medium inline-flex items-center gap-1"
+                              className="text-sm font-medium inline-flex items-center gap-1"
+                              style={{ color: 'var(--admin-warning)' }}
                             >
                               <Trash2 className="w-4 h-4" />
                               Trash
@@ -340,14 +396,16 @@ export default function PostsPage() {
                           <>
                             <button
                               onClick={() => handleRestore(post.id)}
-                              className="text-green-700 hover:text-green-900 text-sm font-medium inline-flex items-center gap-1"
+                              className="text-sm font-medium inline-flex items-center gap-1"
+                              style={{ color: 'var(--admin-success)' }}
                             >
                               <RotateCcw className="w-4 h-4" />
                               Restore
                             </button>
                             <button
                               onClick={() => handleForceDelete(post.id)}
-                              className="text-red-600 hover:text-red-900 text-sm font-medium inline-flex items-center gap-1"
+                              className="text-sm font-medium inline-flex items-center gap-1"
+                              style={{ color: 'var(--admin-danger)' }}
                             >
                               <XCircle className="w-4 h-4" />
                               Delete Permanently
@@ -369,11 +427,7 @@ export default function PostsPage() {
                   <button
                     key={page}
                     onClick={() => fetchPosts(page)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      currentPage === page
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                    }`}
+                    className={`btn ${currentPage === page ? 'btn-secondary' : 'btn-ghost'}`}
                   >
                     {page}
                   </button>
