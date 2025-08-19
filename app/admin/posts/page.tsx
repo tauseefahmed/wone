@@ -30,12 +30,10 @@ export default function PostsPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showTrash, setShowTrash] = useState(false)
-  const [query, setQuery] = useState('')
 
   const fetchPosts = async (page: number = 1, trash: boolean = showTrash) => {
     try {
-      const q = query.trim()
-      const response = await fetch(`/api/admin/posts?page=${page}&limit=10&trash=${trash ? '1' : '0'}${q ? `&q=${encodeURIComponent(q)}` : ''}`)
+      const response = await fetch(`/api/admin/posts?page=${page}&limit=10&trash=${trash ? '1' : '0'}`)
       if (response.ok) {
         const data = await response.json()
         setPosts(data.posts)
@@ -52,17 +50,6 @@ export default function PostsPage() {
   useEffect(() => {
     fetchPosts()
   }, [])
-
-  // Debounce query changes
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      setLoading(true)
-      setSelectedIds([])
-      fetchPosts(1)
-    }, 300)
-    return () => clearTimeout(handle)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query])
 
   const isAllSelected = posts.length > 0 && selectedIds.length === posts.length
 
@@ -206,15 +193,6 @@ export default function PostsPage() {
               Trash
             </button>
           </div>
-          <div className="hidden sm:block w-64">
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search posts..."
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
           <div className="flex items-center gap-2 border rounded-md px-3 py-2">
             <input
               id="select-all"
@@ -285,25 +263,21 @@ export default function PostsPage() {
               {posts.map((post) => (
                 <li key={post.id}>
                   <div className="px-4 py-4 sm:px-6">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-start sm:items-center justify-between gap-3">
                       <div className="flex items-start sm:items-center gap-3 flex-1">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(post.id)}
                           onChange={() => toggleSelect(post.id)}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded self-center"
+                          className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded"
                         />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center min-w-0">
-                              <p className="text-base font-medium truncate">
-                                <Link href={`/admin/posts/${post.id}`} className="text-gray-800 hover:text-gray-900">
-                                  {post.title}
-                                </Link>
-                              </p>
-                              <span className="mx-2 text-gray-300">|</span>
-                              <span className="text-sm text-gray-500 truncate">By {post.author.name || post.author.email}</span>
-                            </div>
+                            <p className="text-lg font-medium text-blue-600 truncate">
+                              <Link href={`/admin/posts/${post.id}`}>
+                                {post.title}
+                              </Link>
+                            </p>
                             <div className="ml-2 flex-shrink-0 flex">
                               {post.published && (
                                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -319,8 +293,11 @@ export default function PostsPage() {
                           </div>
                           <div className="mt-2 sm:flex sm:justify-between">
                             <div className="sm:flex">
+                              <p className="flex items-center text-sm text-gray-500">
+                                By {post.author.name || post.author.email}
+                              </p>
                               {post.categories.length > 0 && (
-                                <p className="flex items-center text-sm text-gray-500">
+                                <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
                                   Categories: {post.categories.map(c => c.category.name).join(', ')}
                                 </p>
                               )}

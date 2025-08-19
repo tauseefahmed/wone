@@ -13,22 +13,8 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '10')
   const skip = (page - 1) * limit
   const showTrash = searchParams.get('trash') === '1'
-  const q = (searchParams.get('q') || '').trim()
 
   try {
-    const baseWhere = showTrash ? { deletedAt: { not: null } } : { deletedAt: null }
-    const textFilter = q
-      ? {
-          OR: [
-            { title: { contains: q } },
-            { excerpt: { contains: q } },
-            { content: { contains: q } },
-            { metaTitle: { contains: q } },
-            { metaDescription: { contains: q } },
-          ],
-        }
-      : {}
-    const where = { ...baseWhere, ...(textFilter as any) }
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
         skip,
@@ -39,9 +25,9 @@ export async function GET(request: NextRequest) {
           categories: { include: { category: true } },
           tags: { include: { tag: true } }
         },
-        where
+        where: showTrash ? { deletedAt: { not: null } } : { deletedAt: null }
       }),
-      prisma.post.count({ where })
+      prisma.post.count({ where: showTrash ? { deletedAt: { not: null } } : { deletedAt: null } })
     ])
 
     return NextResponse.json({

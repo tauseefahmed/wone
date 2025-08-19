@@ -13,22 +13,8 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '10')
   const skip = (page - 1) * limit
   const showTrash = searchParams.get('trash') === '1'
-  const q = (searchParams.get('q') || '').trim()
 
   try {
-    const baseWhere = showTrash ? { deletedAt: { not: null } } : { deletedAt: null }
-    const textFilter = q
-      ? {
-          OR: [
-            { title: { contains: q } },
-            { content: { contains: q } },
-            { metaTitle: { contains: q } },
-            { metaDescription: { contains: q } },
-          ],
-        }
-      : {}
-    const where = { ...baseWhere, ...(textFilter as any) }
-
     const [pages, total] = await Promise.all([
       prisma.page.findMany({
         skip,
@@ -37,9 +23,9 @@ export async function GET(request: NextRequest) {
         include: {
           author: { select: { name: true, email: true } },
         },
-        where,
+        where: showTrash ? { deletedAt: { not: null } } : { deletedAt: null }
       }),
-      prisma.page.count({ where }),
+      prisma.page.count({ where: showTrash ? { deletedAt: { not: null } } : { deletedAt: null } }),
     ])
 
     return NextResponse.json({

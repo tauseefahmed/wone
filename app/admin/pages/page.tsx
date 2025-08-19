@@ -21,12 +21,10 @@ export default function PagesPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showTrash, setShowTrash] = useState(false)
-  const [query, setQuery] = useState('')
 
   const fetchPages = async (page: number = 1, trash: boolean = showTrash) => {
     try {
-      const q = query.trim()
-      const res = await fetch(`/api/admin/pages?page=${page}&limit=10&trash=${trash ? '1' : '0'}${q ? `&q=${encodeURIComponent(q)}` : ''}`)
+      const res = await fetch(`/api/admin/pages?page=${page}&limit=10&trash=${trash ? '1' : '0'}`)
       if (res.ok) {
         const data = await res.json()
         setPages(data.pages)
@@ -43,17 +41,6 @@ export default function PagesPage() {
   useEffect(() => {
     fetchPages()
   }, [])
-
-  // Debounce query changes
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      setLoading(true)
-      setSelectedIds([])
-      fetchPages(1)
-    }, 300)
-    return () => clearTimeout(handle)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query])
 
   const isAllSelected = pages.length > 0 && selectedIds.length === pages.length
 
@@ -173,15 +160,6 @@ export default function PagesPage() {
               Trash
             </button>
           </div>
-          <div className="hidden sm:block w-64">
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search pages..."
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
           <div className="flex items-center gap-2 border rounded-md px-3 py-2">
             <input
               id="select-all"
@@ -252,18 +230,18 @@ export default function PagesPage() {
               {pages.map((page) => (
                 <li key={page.id}>
                   <div className="px-4 py-4 sm:px-6">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-start sm:items-center justify-between gap-3">
                       <div className="flex items-start sm:items-center gap-3 flex-1">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(page.id)}
                           onChange={() => toggleSelect(page.id)}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded self-center"
+                          className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded"
                         />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="text-base font-medium truncate">
-                              <Link href={`/admin/pages/${page.id}`} className="text-gray-800 hover:text-gray-900">{page.title}</Link>
+                            <p className="text-lg font-medium text-blue-600 truncate">
+                              <Link href={`/admin/pages/${page.id}`}>{page.title}</Link>
                             </p>
                             <div className="ml-2 flex-shrink-0 flex">
                               {page.published && (

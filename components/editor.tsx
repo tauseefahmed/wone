@@ -203,7 +203,7 @@ export default function Editor({ content, onChange, placeholder = "Start writing
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-base sm:prose-lg lg:prose-xl xl:prose-2xl text-gray-900 prose-headings:text-gray-900 prose-p:text-gray-900 prose-strong:text-gray-900 mx-auto focus:outline-none min-h-[300px] p-4',
+        class: 'prose-content mx-auto focus:outline-none min-h-[300px] p-4',
       },
     },
   })

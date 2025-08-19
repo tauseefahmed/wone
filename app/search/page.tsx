@@ -59,11 +59,11 @@ async function searchAll(q: string, page: number = 1, limit: number = 9) {
     ? {
         published: true,
         OR: [
-          { title: { contains: q } },
-          { excerpt: { contains: q } },
-          { content: { contains: q } },
-          { metaTitle: { contains: q } },
-          { metaDescription: { contains: q } },
+          { title: { contains: q, mode: 'insensitive' as const } },
+          { excerpt: { contains: q, mode: 'insensitive' as const } },
+          { content: { contains: q, mode: 'insensitive' as const } },
+          { metaTitle: { contains: q, mode: 'insensitive' as const } },
+          { metaDescription: { contains: q, mode: 'insensitive' as const } },
         ],
       }
     : { published: true }
@@ -72,10 +72,10 @@ async function searchAll(q: string, page: number = 1, limit: number = 9) {
     ? {
         published: true,
         OR: [
-          { title: { contains: q } },
-          { content: { contains: q } },
-          { metaTitle: { contains: q } },
-          { metaDescription: { contains: q } },
+          { title: { contains: q, mode: 'insensitive' as const } },
+          { content: { contains: q, mode: 'insensitive' as const } },
+          { metaTitle: { contains: q, mode: 'insensitive' as const } },
+          { metaDescription: { contains: q, mode: 'insensitive' as const } },
         ],
       }
     : { published: true }

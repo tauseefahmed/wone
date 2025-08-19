@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
@@ -84,15 +83,9 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
             )}
           </div>
           <div className="px-8 py-8">
-            <div className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-blue-600 prose-a:hover:text-blue-800 space-y-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: page.content }} />
+            <div className="prose-content" dangerouslySetInnerHTML={{ __html: page.content }} />
           </div>
         </article>
-        <div className="mt-8 text-center">
-          <Link href="/" className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition duration-200">
-            <svg className="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-            Back to Home
-          </Link>
-        </div>
       </main>
     </FrontShell>
   )
